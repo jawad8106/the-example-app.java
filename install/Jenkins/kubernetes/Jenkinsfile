@@ -1,0 +1,99 @@
+def deployingValue = ''
+
+def currentDeployingValue(namespace, blue, green, app) {
+        script {
+            podStatus = sh (returnStatus: true, script: "kubectl describe svc " + app + "-service -n " + namespace + "| grep -i Selector | cut -d'=' -f2 | cut -d',' -f1 &> value.txt")
+            getValue = readFile('value.txt').trim()
+
+            if (getValue.toLowerCase().equals(blue.toLowerCase())) {
+                println "Currently " + getValue + " " + app + " is running!"
+                deployingValue = green
+            } else if (getValue.toLowerCase().equals(green.toLowerCase())) {
+                println "Currently " + getValue + " " + app + " is running!"
+                deployingValue = blue
+            } else {
+                println "The application " + app + " is not running, now deploying app for blue by default!"
+                deployingValue = 'blue'
+            }
+
+            println "Now deploying " + deployingValue.toUpperCase() + "!"
+            deployingValue
+        }
+}
+
+def getNameSpace(nsymlPath){
+
+    def NS=sh (returnStatus: true, script: "grep -i name: " + nsymlPath + " |head -n1| cut -d':' -f2 &> namespace.txt")
+    output = readFile('namespace.txt').trim()
+
+    output
+}
+
+def applyK8Config(configPath){
+    sh (returnStatus: true, script: "kubectl apply -f ${configPath}")
+}
+
+def deleteK8Config(configPath) {
+    sh (returnStatus: true, script: "kubectl delete -f ${configPath}")
+}
+
+pipeline {
+
+    agent { label "k8-master" }
+
+    environment {
+
+            appName = 'discovery-server'
+
+            /* Do not change below this line! */
+            k8configPath = "${WORKSPACE}/install/deploy/kubernetes"
+            namespace = getNameSpace("${k8configPath}/namespace.yaml")
+
+            switchTo  = ''
+    }
+
+    stages {
+		stage('Clone Repo') {
+			steps {
+				checkout scm
+			}
+			/*steps {
+			    	checkout([$class: 'GitSCM',
+					branches: [[name: '/master']],
+					doGenerateSubmoduleConfigurations: false,
+					extensions: [[$class: 'CleanCheckout']],
+					submoduleCfg: [],
+					//userRemoteConfigs: [[credentialsId: 'b2ed5912-90f0-40fb-8f98-a35933a55f30', url: 'https://github.com/nisum-inc/POC_Discovery_Server.git']]
+					userRemoteConfigs: [[credentialsId: 'b2fd807f-ce8d-4c98-aa74-792f70925e88', url: 'https://github.com/nisum-inc/POC_Discovery_Server.git']]
+
+				])
+			}*/
+		}
+        stage('Create Namespace') {
+		    steps {
+		        script {
+                    applyK8Config(env.k8configPath + "/namespace.yaml")
+	    	    }
+	    	}
+		}
+		stage('Apply Deployment') {
+		    environment {
+                switchTo = currentDeployingValue(env.namespace, "blue", "green", env.appName).toLowerCase()
+            }
+		    steps {
+                applyK8Config(env.k8configPath + "/" + env.appName + "-deployment-" + env.switchTo + ".yaml")
+
+        	}
+        }
+        stage('Switch Deployment'){
+		    environment {
+                switchTo = currentDeployingValue(env.namespace, "blue", "green", env.appName).toLowerCase()
+            }
+            steps {
+                script {
+                    applyK8Config(env.k8configPath + "/" + env.appName + "-service-" + env.switchTo + ".yaml")
+                }
+            }
+        }
+    }
+}

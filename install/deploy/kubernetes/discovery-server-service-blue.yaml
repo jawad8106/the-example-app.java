@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-server-service
+  namespace: devopspoc
+  labels:
+    name: discovery-server-service
+spec:
+  type: NodePort
+  ports:
+  - port: 7001
+    nodePort: 30001
+    targetPort: 7001
+    protocol: TCP
+
+  selector:
+    name: discovery-server
+    deploymentType: BLUE

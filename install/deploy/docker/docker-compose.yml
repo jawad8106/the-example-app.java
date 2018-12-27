@@ -1,0 +1,85 @@
+version: "3"
+services:
+
+
+  discovery_server:
+    build:
+      context: ${DEPLOY_PATH}
+      dockerfile: discovery_server/Dockerfile
+    container_name: discovery_server
+    ports:
+      - ${DISCOVERY_SERVER_PORT}:7001
+    restart: always
+
+  config_server:
+    build:
+      context: ${DEPLOY_PATH}
+      dockerfile: config_server/Dockerfile
+    depends_on:
+      - discovery_server
+    container_name: config_server
+    ports:
+      - ${CONFIG_SERVER_PORT}:8001
+    restart: always
+
+  biz_app:
+    build:
+      context: ${DEPLOY_PATH}
+      dockerfile: biz_application/Dockerfile
+    depends_on:
+      - config_server
+      - discovery_server
+    container_name: biz_application
+    ports:
+      - ${BIZ_APP_PORT}:9601
+    restart: always
+
+  admin_app:
+    build:
+      context: ${DEPLOY_PATH}
+      dockerfile: admin_application/Dockerfile
+    depends_on:
+      - discovery_server
+      - config_server
+    container_name: admin_application
+    ports:
+      - ${ADMIN_APP_PORT}:9401
+    restart: always
+
+  news_app:
+    build:
+      context: ${DEPLOY_PATH}
+      dockerfile: news_application/Dockerfile
+    depends_on:
+      - discovery_server
+      - config_server
+    container_name: news_application
+    ports:
+      - ${NEWS_APP_PORT}:9201
+    restart: always
+
+  website_app:
+    build:
+      context: ${DEPLOY_PATH}
+      dockerfile: website_application/Dockerfile
+    depends_on:
+      - discovery_server
+      - config_server
+      - proxy_server
+    container_name: website_application
+    ports:
+      - ${WEBSITE_APP_PORT}:9001
+    restart: always
+
+  proxy_server:
+    build:
+      context: ${DEPLOY_PATH}
+      dockerfile: proxy_server/Dockerfile
+    depends_on:
+      - discovery_server
+      - config_server
+    container_name: proxy_server
+    ports:
+      - ${PROXY_SERVER_PORT}:8080
+    restart: always
+

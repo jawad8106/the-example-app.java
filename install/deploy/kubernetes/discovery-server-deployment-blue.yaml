@@ -1,0 +1,32 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: discovery-server-blue
+  namespace: devopspoc
+  labels:
+    name: discovery-server
+    service: discovery-server-service
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      name: discovery-server
+      type: backend
+  template:
+    metadata:
+      labels:
+        name: discovery-server
+        type: backend
+        version: "1"
+        deploymentType: BLUE
+    spec:
+      containers:
+      - name: discovery-server
+        image: nisumpk/discovery_server
+        ports:
+        - containerPort: 7001
+        env:
+        - name: SERVER_PORT
+          value: -Dserver.port=7001
+        command: ["java"]
+        args: ["$(SERVER_PORT)", "-Deureka.instance.preferIpAddress=true", "-jar", "/usr/src/discovery-server-SNAPSHOT.jar"]

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: discovery-server
+  namespace: canary
+  labels:
+    app: discovery-server
+spec:
+  type: NodePort
+  ports:
+  - port: 7001
+    nodePort: 30251
+    targetPort: 7001
+    name: http
+  selector:
+    app: discovery-server
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: discovery-server-v1
+  namespace: canary
+spec:
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: discovery-server
+        version: discovery-server-v1
+    spec:
+      containers:
+      - name: discovery-server
+        image: nisumpk/discovery_server
+        ports:
+        - containerPort: 7001
+        env:
+        - name: SERVER_PORT
+          value: -Dserver.port=7001
+        command: ["java"]
+        args: ["$(SERVER_PORT)", "-Deureka.server.maxThreadsForPeerReplication=0", "-Deureka.client.serviceUrl=http://discovery-server:7001/eureka/", "-jar", "/usr/src/discovery-server-SNAPSHOT.jar"]

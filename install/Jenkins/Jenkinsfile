@@ -1,0 +1,89 @@
+def projectConfig = ["${params.discoveryProperties}", "${params.configProperties}", "${params.bizappProperties}", "${params.adminProperties}", "${params.newsProperties}", "${params.websiteProperties}", "${params.proxyProperties}" ]
+
+pipeline {
+
+	agent any
+
+	parameters {
+    	string(defaultValue: '-Dsonar.projectKey=discovery -Dsonar.projectName=Discovery-server -Dsonar.java.binaries=microservices-example/discovery-server/target/classes/com/example/ -Dsonar.sources=microservices-example/discovery-server/src/', description: '', name: 'discoveryProperties')
+    	string(defaultValue: '-Dsonar.projectKey=config -Dsonar.projectName=Config-server -Dsonar.java.binaries=microservices-example/config-server/target/classes/com/example/ -Dsonar.sources=microservices-example/config-server/src/', description: '', name: 'configProperties')
+    	string(defaultValue: '-Dsonar.projectKey=bizapp -Dsonar.projectName=Biz-Application -Dsonar.java.binaries=microservices-example/biz-application/target/classes/com/example/ -Dsonar.sources=microservices-example/biz-application/src/', description: '', name: 'bizappProperties')
+    	string(defaultValue: '-Dsonar.projectKey=admin -Dsonar.projectName=Admin-Application -Dsonar.java.binaries=microservices-example/admin-application/target/classes/com/example/ -Dsonar.sources=microservices-example/admin-application/src/', description: '', name: 'adminProperties')
+    	string(defaultValue: '-Dsonar.projectKey=news -Dsonar.projectName=News-Application -Dsonar.java.binaries=microservices-example/news-application/target/classes/com/example/ -Dsonar.sources=microservices-example/news-application/src/', description: '', name: 'newsProperties')
+    	string(defaultValue: '-Dsonar.projectKey=website -Dsonar.projectName=Website-Application -Dsonar.java.binaries=microservices-example/website-application/target/classes/com/example/ -Dsonar.sources=microservices-example/website-application/src/', description: '', name: 'websiteProperties')
+    	string(defaultValue: '-Dsonar.projectKey=proxy -Dsonar.projectName=Proxy-server -Dsonar.java.binaries=microservices-example/proxy-server/target/classes/com/example/ -Dsonar.sources=microservices-example/proxy-server/src/', description: '', name: 'proxyProperties')
+
+    }
+	stages{
+		stage('Clone Repo') {
+			steps {
+				checkout scm
+			}
+			//steps {
+			//	checkout([$class: 'GitSCM', 
+			//		branches: [[name: '*/master']], 
+			//		doGenerateSubmoduleConfigurations: false, 
+			//		extensions: [[$class: 'CleanCheckout']], 
+			//		submoduleCfg: [], 
+			//		userRemoteConfigs: [[credentialsId: 'b2ed5912-90f0-40fb-8f98-a35933a55f30', url: 'https://github.com/nisum-inc/DevOpsPOC.git']]
+			//	])
+			//}
+		}
+		stage('Build Application') {
+			steps{
+				sh "cd ${WORKSPACE}/microservices-example && ${MAVEN_HOME}/bin/mvn -Dmaven.test.failure.ignore -Dmaven.test.skip=true clean package"
+			}
+		}
+		//Code analysis through SonarQube
+        stage('Code analysis') {
+            
+            environment {
+                scannerHome = tool 'sonarScanner'
+            }
+            
+            steps {
+                withSonarQubeEnv('SonarQube') {
+                	//sh "${scannerHome}/bin/sonar-runner -Dsonar.projectKey=devops -Dsonar.projectName=DevOpsPOC -Dsonar.java.binaries=microservices-example/discovery-server/target/classes/com/example/ -Dsonar.sources=microservices-example/discovery-server/src/"
+
+                	script {
+	                    for(int i=0; i<projectConfig.size();i++) {
+	                        sh "${scannerHome}/bin/sonar-runner ${projectConfig[i]}"
+	                    }    
+                	}
+                }
+            }
+        }
+		//stage('Deploy') {
+			
+		//}
+		
+		
+		stage('Upload Artifacts') {
+            
+            steps {
+
+                script {
+
+                  def server = Artifactory.server 'artifactory'
+                  def buildInfo = Artifactory.newBuildInfo()
+                
+                  def uploadSpec = """{
+                      "files": [
+                        {
+                          "pattern": "${WORKSPACE}/microservices-example/*/target/*SNAPSHOT.jar",
+                          "target": "libs-snapshot-local/${JOB_NAME}/${GIT_BRANCH}/"
+                        }
+                      ]
+                  }"""
+                  
+                  server.upload spec: uploadSpec, buildInfo: buildInfo
+                  server.publishBuildInfo buildInfo
+                  
+                }
+                
+            }
+          
+        }     
+	}
+}
+
