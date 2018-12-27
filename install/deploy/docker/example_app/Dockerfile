@@ -9,7 +9,7 @@ ENV APP_NAME=example_app
 RUN mkdir -p /usr/src/${APP_NAME}
 
 # Copy all the required files/directories
-COPY ${APP_NAME}.tar.gz /usr/src/${APP_NAME}/
+ADD ${APP_NAME}.tar.gz /usr/src/${APP_NAME}/
 
 WORKDIR /usr/src/${APP_NAME}
 
