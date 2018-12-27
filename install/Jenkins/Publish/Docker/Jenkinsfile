@@ -48,7 +48,7 @@ pipeline {
                     /* Copying jar file to relavant directory */
                     sh script: "cp  ${WORKSPACE}/application.properties  ${WORKSPACE}/build/resources/main/"
                     sh script: "cp -r ${WORKSPACE}/build ${WORKSPACE}/build.gradle ${WORKSPACE}/gradle ${WORKSPACE}/gradle.properties ${WORKSPACE}/gradlew ${WORKSPACE}/src ${WORKSPACE}/install/deploy/docker/" + app.appName.replaceAll("-", "_") + "/"
-                    sh script: "${WORKSPACE}/install/deploy/docker/" + app.appName.replaceAll("-", "_") + " && tar -cvf example_app.tar.gz *"
+                    sh script: "cd ${WORKSPACE}/install/deploy/docker/" + app.appName.replaceAll("-", "_") + " && tar -cvf example_app.tar.gz *"
 
                     /* Building docker image */
                     docker.build(registry + "/" + app.appName.replaceAll("-", "_"), "-f ${WORKSPACE}/install/deploy/docker/" + app.appName.replaceAll("-", "_") + "/Dockerfile ${WORKSPACE}/install/deploy/docker")
