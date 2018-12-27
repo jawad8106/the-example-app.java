@@ -1,4 +1,4 @@
-FROM openjdk:8-jre-alpine
+FROM openjdk:8-jdk-alpine
 
 # Initializing variables that will be used later.
 ENV APP_NAME=example_app
