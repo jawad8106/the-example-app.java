@@ -1,0 +1,14 @@
+FROM openjdk:8-jre-alpine
+
+# Initializing variables that will be used later.
+ENV APP_NAME=example_app
+#ENV SERVER_PORT=7001
+#ENV JAR_FILE=discovery-server-SNAPSHOT.jar
+
+# Copy all the required files/directories
+COPY ${APP_NAME}/* /usr/src/${APP_NAME}
+
+WORKDIR /usr/src/${APP_NAME}
+
+# Startup Command
+ENTRYPOINT ./gradlew run
