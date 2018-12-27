@@ -14,4 +14,4 @@ ADD ${APP_NAME}.tar.gz /usr/src/${APP_NAME}/
 WORKDIR /usr/src/${APP_NAME}
 
 # Startup Command
-ENTRYPOINT ./gradlew run
+#ENTRYPOINT ./gradlew run
