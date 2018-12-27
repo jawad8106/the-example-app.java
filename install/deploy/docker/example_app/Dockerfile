@@ -14,4 +14,4 @@ COPY ${APP_NAME}/* /usr/src/${APP_NAME}/
 WORKDIR /usr/src/${APP_NAME}
 
 # Startup Command
-ENTRYPOINT ./gradlew run
+#ENTRYPOINT ./gradlew run
