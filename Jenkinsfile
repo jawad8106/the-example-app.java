@@ -5,7 +5,7 @@ pipeline {
 
     /* Environment variables related to docker hub */
     environment {
-        registry = "nisumusa"
+        registry = "jjahmeddocker"
         registryCredential = 'docker-hub-credentials'
         dockerHost = 'localhost'
     }
